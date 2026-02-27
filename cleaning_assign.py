@@ -188,7 +188,7 @@ def distribute_5_weeks(capacities, seed=None):
 st.title("생활반 별 청소 구역")
 st.markdown("""
 생활반 청소 가능 인원에 따라 배정되는 청소구역 수가 달라집니다.  
-1-3명일 시: 1개 구역  
+1-3명일 시: 1개 구역(+ 화장실/세면장/샤워장 면제)  
 4-7명일 시 : 2개 구역  
 8-11명일 시 : 3개 구역  
 """)
@@ -230,4 +230,5 @@ with st.expander("📄 현재 실행 중인 코드 보기"):
             st.code(f.read(), language="python")
     except Exception as e:
         st.error(str(e))
+
 
