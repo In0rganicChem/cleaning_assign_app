@@ -220,4 +220,21 @@ if st.button("▶ 결과 생성"):
 
 st.markdown("---")
 # run locally:
+
 # python -m streamlit run cleaning_assign.py
+
+
+# -------------------------
+# 코드 보기 기능
+st.markdown("---")
+st.header("프로그램 코드 확인")
+
+if st.button("📄 현재 실행 중인 전체 코드 보기"):
+    try:
+        with open(__file__, "r", encoding="utf-8") as f:
+            code_text = f.read()
+
+        st.code(code_text, language="python")
+
+    except Exception as e:
+        st.error(f"코드를 불러올 수 없습니다: {e}")
