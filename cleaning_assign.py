@@ -10,13 +10,21 @@ st.set_page_config(page_title="청소구역 배정 프로그램", layout="wide")
 st.markdown("""
 <style>
 @media (max-width: 768px) {
-    pre, code {
-        font-size: 10px !important;
+
+    h1 { font-size: 1.6rem !important; }
+    h2 { font-size: 1.3rem !important; }
+    h3 { font-size: 1.15rem !important; }
+
+    .block-container {
+        padding-top: 1rem !important;
+        padding-bottom: 1rem !important;
+        padding-left: 0.7rem !important;
+        padding-right: 0.7rem !important;
     }
+
 }
 </style>
 """, unsafe_allow_html=True)
-
 # -------------------------
 # 생활반 이름
 class_names = [
@@ -237,6 +245,7 @@ with st.expander("📄 현재 실행 중인 코드 보기"):
             st.code(f.read(), language="python")
     except Exception as e:
         st.error(str(e))
+
 
 
 
