@@ -16,8 +16,8 @@ st.markdown("""
     h3 { font-size: 1.15rem !important; }
 
     .block-container {
-        padding-top: 1rem !important;
-        padding-bottom: 1rem !important;
+        padding-top: 1.5rem !important;
+        padding-bottom: 1.5rem !important;
         padding-left: 0.7rem !important;
         padding-right: 0.7rem !important;
     }
@@ -245,6 +245,7 @@ with st.expander("📄 현재 실행 중인 코드 보기"):
             st.code(f.read(), language="python")
     except Exception as e:
         st.error(str(e))
+
 
 
 
