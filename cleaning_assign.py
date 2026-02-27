@@ -215,8 +215,6 @@ if st.button("▶ 결과 생성"):
     st.header("배정 결과")
     st.dataframe(df.style.set_properties(**{'white-space': 'pre'}), height=600)
 
-    if st.checkbox("원시 배정 데이터 보기 (디버그)"):
-        st.write(weeks_assignments)
 
 st.markdown("---")
 # run locally:
@@ -230,5 +228,6 @@ with st.expander("📄 현재 실행 중인 코드 보기"):
             st.code(f.read(), language="python")
     except Exception as e:
         st.error(str(e))
+
 
 
