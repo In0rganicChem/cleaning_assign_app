@@ -7,6 +7,15 @@ import random
 from io import BytesIO
 
 st.set_page_config(page_title="청소구역 배정 프로그램", layout="wide")
+st.markdown("""
+<style>
+@media (max-width: 768px) {
+    pre, code {
+        font-size: 10px !important;
+    }
+}
+</style>
+""", unsafe_allow_html=True)
 
 # -------------------------
 # 생활반 이름
@@ -228,6 +237,7 @@ with st.expander("📄 현재 실행 중인 코드 보기"):
             st.code(f.read(), language="python")
     except Exception as e:
         st.error(str(e))
+
 
 
 
