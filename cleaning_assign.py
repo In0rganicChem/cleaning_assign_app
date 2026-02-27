@@ -32,14 +32,16 @@ class_names = [
     "10생활반","11생활반","12생활반","13생활반","14생활반"
 ]
 
-# 구역 풀 (고정)
+# 청소구역들
+# 핵심 청소구역 9개
 super_hard_areas = ["1층 화장실", "2층 화장실", "3층 화장실", "1층 목욕탕"]  # 초고난도 4개
 hard_areas = ["2층 샤워장", "3층 샤워장", "1층 세면장", "2층 세면장", "3층 세면장"]  # 고난도 5개
+# 일반 청소구역 16개
 general_areas_base = [
     "1층 세탁실", "1층 복도", "2층 복도", "3층 복도", "동편 계단", "중앙 계단",
     "2층 휴게실", "3층 휴게실", "체단실", "군척장", "공용세탁방", "당구장",
     "사지방", "노래방", "2층 세탁실", "3층 세탁실"
-]  # 일반 16개
+]
 # -------------------------
 
 def pop_random(pool, rnd):
@@ -240,13 +242,14 @@ st.markdown("---")
 
 # python -m streamlit run cleaning_assign.py
 
-
+st.markdown("Python 코드를 Github에 업로드하고, Streamlit을 이용하여 완성된 프로그램입니다. ")
 with st.expander("📄 현재 실행 중인 코드 보기"):
     try:
         with open(__file__, "r", encoding="utf-8") as f:
             st.code(f.read(), language="python")
     except Exception as e:
         st.error(str(e))
+
 
 
 
