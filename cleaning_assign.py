@@ -224,14 +224,13 @@ for i in range(0, len(class_names), 3):
 st.markdown("---")
 st.markdown("지난 청소구역에서 화장실/목욕탕을 담당하고 있는 생활반을 선택하세요. 선택된 생활반은 첫 주차에 화장실과 목욕탕을 배정받지 않게 됩니다.")
 first_week_exempt = st.multiselect(
-    "입력",
+    "",
     class_names,
     default=[]
 )
 
 st.markdown("난수 시드를 정수로 입력하세요. 같은 난수 시드는 같은 결과를 보장합니다. 입력하지 않으면 랜덤으로 처리됩니다.", value="")
 seed_input = st.text_input("", value="")
-seed_val = int(seed_input) if seed_input.isdigit() else None
 
 st.markdown("---")
 
