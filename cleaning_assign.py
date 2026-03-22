@@ -170,7 +170,7 @@ def distribute_5_weeks(capacities, first_week_exempt_set=None, seed=None):
 
     rows = []
     for c in class_names:
-        row = {"생활반": c, "청소가능인원": capacities[c]}
+        row = {"생활반": c, "인원": capacities[c]}
         for i, week in enumerate(weeks, 1):
             row[f"{i}주차"] = ", ".join(week[c]) if week[c] else ""
         rows.append(row)
