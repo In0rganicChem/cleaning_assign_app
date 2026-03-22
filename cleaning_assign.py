@@ -225,8 +225,8 @@ if st.button("▶ 결과 생성"):
     st.success("배정 완료. 결과를 확인하세요.")
 
     if all_zero_case:
-        st.markdown("## 🐱 고양이 모드")
-        st.markdown("모든 생활반이 0명입니다. 🐾")
+        st.markdown("## 🐱")
+        st.markdown("청소 인원이 부족하여 짬타이거가 청소합니다.")
 
     if warning_flag:
         st.warning("청소 인원이 매우 부족하여 2주 연속 화장실/목욕탕을 청소하는 생활반이 나올 수 있습니다.")
@@ -237,7 +237,7 @@ if st.button("▶ 결과 생성"):
     html = df.to_html(escape=False, index=False)
     for area in super_hard_areas:
         html = html.replace(area, f"<b>{area}</b>")
-
+    html = html.replace("<th>", '<th style="text-align:center;">')
     st.markdown(html, unsafe_allow_html=True)
 
 st.markdown("---")
