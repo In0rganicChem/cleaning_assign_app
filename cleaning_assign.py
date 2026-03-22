@@ -221,7 +221,8 @@ for i in range(0, len(class_names), 3):
             key=f"cap_{cname}"
         )
 
-st.subheader("1주차 초고난도 면제")
+st.markdown("지난 청소구역에서 화장실/목욕탕을 담당하고 있는 생활반을 선택하세요.  
+선택된 생활반은 첫 주차에 화장실과 목욕탕을 배정받지 않게 됩니다.")
 first_week_exempt = st.multiselect(
     "면제할 생활반 선택",
     class_names,
