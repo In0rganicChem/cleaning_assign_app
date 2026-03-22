@@ -220,14 +220,14 @@ for i in range(0, len(class_names), 3):
             key=f"cap_{cname}"
         )
 
-st.subheader("1주차 초고난도 면제")
+st.markdown("---")
 first_week_exempt = st.multiselect(
-    "면제할 생활반 선택",
+    "지난 주에 화장실/목욕탕을 배정받은 생활반을 선택하세요. 선택된 생활반들은 첫 주에 화장실 및 목욕탕을 배정받지 않습니다.",
     class_names,
     default=[]
 )
 
-seed_input = st.text_input("난수 시드", value="")
+seed_input = st.text_input("난수 시드를 정수로 입력하세요. 같은 난수 시드는 같은 결과를 보장합니다. 입력하지 않으면 랜덤으로 처리됩니다.", value="")
 seed_val = int(seed_input) if seed_input.isdigit() else None
 
 if st.button("▶ 결과 생성"):
