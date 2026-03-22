@@ -249,12 +249,41 @@ if st.button("▶ 결과 생성"):
 
     st.header("배정 결과")
 
-    # 초고난도 bold 처리
     html = df.to_html(escape=False, index=False)
     for area in super_hard_areas:
         html = html.replace(area, f"<b>{area}</b>")
-    html = html.replace("<th>", '<th style="text-align:center;">')
-    st.markdown(html, unsafe_allow_html=True)
+
+    st.markdown(
+        """
+        <style>
+        .result-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .result-wrap table {
+            width: max-content;
+            min-width: 100%;
+            border-collapse: collapse;
+        }
+        .result-wrap th,
+        .result-wrap td {
+            white-space: nowrap;
+            text-align: center;
+            padding: 6px 8px;
+            font-size: 12px;
+        }
+        @media (max-width: 768px) {
+            .result-wrap th,
+            .result-wrap td {
+                font-size: 11px;
+            }
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown(f'<div class="result-wrap">{html}</div>', unsafe_allow_html=True)
 
 st.markdown("---")
 st.markdown("Python 코드로 만든 Streamlit 앱입니다.")
