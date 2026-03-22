@@ -186,6 +186,7 @@ def distribute_5_weeks(capacities, first_week_exempt_set=None, seed=None):
 # -------------------------
 # 화면
 # -------------------------
+st.markdown("---")
 st.title("청소구역 배정 프로그램")
 
 st.header("생활반 별 청소가능인원을 입력하십시오 (0~11)")
