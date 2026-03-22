@@ -189,6 +189,7 @@ def distribute_5_weeks(capacities, first_week_exempt_set=None, seed=None):
 st.title("생활반 별 청소 구역")
 
 st.header("생활반 별 청소가능인원을 입력하십시오 (0~11)")
+st.markdown("1-3명 : 쉬운 청소구역 1개  4-6명 : 청소구역 2개  7명 이상 : 청소구역 3개.")
 
 cap_inputs = {}
 for i in range(0, len(class_names), 3):
