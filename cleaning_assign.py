@@ -196,8 +196,8 @@ with st.expander("청소구역 배정 규칙 보기"):
 생활반 청소 가능 인원에 따라 배정되는 청소구역 수가 달라집니다.
  
 1-3명: 쉬운 구역 1개  
-4-6명: 구역 2개  
-7-11명: 구역 3개  
+4-6명: 구역 2개(화장실/세면장/샤워장 1개 포함)  
+7-11명: 구역 3개(화장실/세면장/샤워장 1개 포함)  
 화장실 및 목욕탕은 2주 연속 청소하지 않습니다.
 """
 )
@@ -228,7 +228,7 @@ first_week_exempt = st.multiselect(
     default=[]
 )
 
-seed_input = st.text_input("난수 시드", value="")
+seed_input = st.text_input("난수 시드를 정수로 입력하세요. 같은 난수 시드는 같은 결과를 보장합니다. 입력하지 않으면 랜덤으로 처리됩니다.", value="")
 seed_val = int(seed_input) if seed_input.isdigit() else None
 
 if st.button("▶ 결과 생성"):
