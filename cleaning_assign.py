@@ -223,7 +223,7 @@ if st.button("실행"):
     df, warnings, all_zero = assign_5_weeks(cap, initial_exempt, seed)
 
     if all_zero:
-        st.info("🐱 모든 생활반이 0명입니다.")
+        st.info("🐱 청소 인원이 없어 짬타이거가 청소합니다.")
 
     for w in warnings:
         st.warning(w)
