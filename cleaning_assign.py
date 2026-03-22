@@ -175,7 +175,7 @@ def distribute_5_weeks(capacities, first_week_exempt_set=None, seed=None):
             row[f"{i}주차"] = ", ".join(week[c]) if week[c] else ""
         rows.append(row)
 
-    leftover_row = {"생활반": "인원 부족으로 배정되지 못한 청소구역", "인원": ""}
+    leftover_row = {"생활반": "인원 부족으로 배정되지 못한 청소구역", "청소가능인원": ""}
     for i, lst in enumerate(leftovers, 1):
         leftover_row[f"{i}주차"] = ", ".join(lst) if lst else ""
     rows.append(leftover_row)
