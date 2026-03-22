@@ -229,7 +229,8 @@ first_week_exempt = st.multiselect(
     default=[]
 )
 
-seed_input = st.markdown("난수 시드를 정수로 입력하세요. 같은 난수 시드는 같은 결과를 보장합니다. 입력하지 않으면 랜덤으로 처리됩니다.", value="")
+st.markdown("난수 시드를 정수로 입력하세요. 같은 난수 시드는 같은 결과를 보장합니다. 입력하지 않으면 랜덤으로 처리됩니다.", value="")
+seed_input = st.text_input("", value="")
 seed_val = int(seed_input) if seed_input.isdigit() else None
 
 st.markdown("---")
