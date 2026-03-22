@@ -189,8 +189,10 @@ def distribute_5_weeks(capacities, first_week_exempt_set=None, seed=None):
 st.title("청소구역 배정 프로그램")
 
 st.header("생활반 별 청소가능인원을 입력하십시오 (0~11)")
-st.markdown(
-    """
+with st.expander("청소구역 배정 규칙 보기"):
+    try:
+        st.markdown(
+            """
 생활반 청소 가능 인원에 따라 배정되는 청소구역 수가 달라집니다.
  
 1-3명: 쉬운 구역 1개  
@@ -199,6 +201,10 @@ st.markdown(
 화장실 및 목욕탕은 2주 연속 청소하지 않습니다.
 """
 )
+    
+    except Exception as e:
+        st.error(str(e))
+
 
 
 cap_inputs = {}
