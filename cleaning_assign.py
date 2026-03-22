@@ -51,6 +51,21 @@ def pop_random(pool, rnd):
     return pool.pop(rnd.randrange(len(pool)))
 
 
+def build_priority_order(names, capacities, rnd):
+    """인원이 많은 순서대로 정렬하되, 같은 인원끼리는 랜덤으로 섞는다."""
+    grouped = {}
+    for c in names:
+        grouped.setdefault(capacities[c], []).append(c)
+
+    ordered = []
+    for cap in sorted(grouped.keys(), reverse=True):
+        chunk = grouped[cap][:]
+        rnd.shuffle(chunk)
+        ordered.extend(chunk)
+
+    return ordered
+
+
 def distribute_one_week(capacities, exempt_superhard_set, rnd):
     """
     한 주차 배정.
@@ -65,93 +80,128 @@ def distribute_one_week(capacities, exempt_superhard_set, rnd):
 
     assignments = {c: [] for c in class_names}
 
+    nonzero = [c for c in class_names if capacities[c] > 0]
+    all_zero_case = len(nonzero) == 0
+    severe_shortage = len(nonzero) < 9
+
+    # 모든 생활반이 0명인 경우
+    if all_zero_case:
+        leftover_areas = super_pool + hard_pool + general_pool
+        week_superhard = set()
+        return assignments, week_superhard, leftover_areas, severe_shortage, all_zero_case
+
     # 주차마다 생활반 순서를 섞어서 편향을 줄인다
     working_order = class_names.copy()
     rnd.shuffle(working_order)
 
-    # A. 0명은 배정 없음
-    # 아무것도 하지 않음
+    # -------------------------
+    # 핵심 구역 배정
+    # -------------------------
 
-    # B. 1~3명은 일반 구역 1개만 배정
-    b_candidates = [c for c in working_order if 1 <= capacities[c] <= 3]
-    rnd.shuffle(b_candidates)
-    for c in b_candidates:
+    if severe_shortage:
+        # 핵심 구역을 모두 배정하기 어려운 경우
+        # 초고난도 면제를 무시하고 모든 핵심 구역을 동등하게 처리한다.
+        core_pool = super_pool + hard_pool
+        core_order = build_priority_order(nonzero, capacities, rnd)
+
+        for c in core_order:
+            if core_pool:
+                assignments[c].append(pop_random(core_pool, rnd))
+            else:
+                break
+
+        leftover_core = core_pool[:]
+
+    else:
+        # 핵심 구역이 충분한 경우
+        # 1) 4명 이상 생활반 중 면제 대상이 아닌 생활반에 초고난도 우선 배정
+        four_plus = [c for c in class_names if capacities[c] >= 4]
+        super_candidates = build_priority_order(
+            [c for c in four_plus if c not in exempt_superhard_set],
+            capacities,
+            rnd
+        )
+
+        for c in super_candidates:
+            if super_pool:
+                assignments[c].append(pop_random(super_pool, rnd))
+            else:
+                break
+
+        # 2) 남은 4명 이상 생활반에 고난도 배정
+        remaining_four_plus = build_priority_order(
+            [c for c in four_plus if len(assignments[c]) == 0],
+            capacities,
+            rnd
+        )
+
+        for c in remaining_four_plus:
+            if hard_pool:
+                assignments[c].append(pop_random(hard_pool, rnd))
+            else:
+                break
+
+        # 3) 핵심 구역이 남았다면 1~3명 생활반에 인원 많은 순으로 배정
+        remaining_core = super_pool + hard_pool
+        one_to_three = build_priority_order(
+            [c for c in class_names if 1 <= capacities[c] <= 3 and len(assignments[c]) == 0],
+            capacities,
+            rnd
+        )
+
+        for c in one_to_three:
+            if remaining_core:
+                assignments[c].append(pop_random(remaining_core, rnd))
+            else:
+                break
+
+        leftover_core = remaining_core[:]
+
+    # -------------------------
+    # 일반 구역 배정
+    # -------------------------
+
+    # 4명 이상이면 일반 구역 1개를 추가한다
+    first_general_targets = build_priority_order(
+        [c for c in class_names if capacities[c] > 0 and len(assignments[c]) == 0],
+        capacities,
+        rnd
+    )
+
+    for c in first_general_targets:
         if general_pool:
             assignments[c].append(pop_random(general_pool, rnd))
-
-    # C. 4~11명은 핵심 구역 1개씩 배정
-    core_candidates = [c for c in working_order if capacities[c] >= 4 and len(assignments[c]) == 0]
-
-    # 이번 주 초고난도 면제 대상은 먼저 제외한다
-    not_had_last = [c for c in core_candidates if c not in exempt_superhard_set]
-    had_last = [c for c in core_candidates if c in exempt_superhard_set]
-
-    rnd.shuffle(not_had_last)
-    rnd.shuffle(had_last)
-
-    assigned_core = set()
-
-    # 초고난도 먼저 배정
-    for c in not_had_last:
-        if super_pool:
-            assignments[c].append(pop_random(super_pool, rnd))
-            assigned_core.add(c)
         else:
             break
 
-    for c in had_last:
-        if super_pool:
-            assignments[c].append(pop_random(super_pool, rnd))
-            assigned_core.add(c)
-        else:
-            break
+    # 4~6명은 여기서 끝
+    # 7~11명은 일반 구역 1개를 더 받는다
+    second_general_targets = build_priority_order(
+        [c for c in class_names if capacities[c] >= 4 and len(assignments[c]) == 1],
+        capacities,
+        rnd
+    )
 
-    # 남은 핵심 대상에게 고난도 배정
-    remaining_candidates = [c for c in core_candidates if c not in assigned_core]
-    rnd.shuffle(remaining_candidates)
-    for c in remaining_candidates:
-        if hard_pool:
-            assignments[c].append(pop_random(hard_pool, rnd))
-            assigned_core.add(c)
-        else:
-            break
-
-    # 핵심 구역이 남았다면 일반 구역 풀로 합친다
-    leftover_core = super_pool + hard_pool
-    if leftover_core:
-        general_pool.extend(leftover_core)
-    rnd.shuffle(general_pool)
-
-    # D. 아직 아무 배정도 못 받은 생활반은 일반 구역 1개 배정
-    no_assignment = [c for c in working_order if capacities[c] > 0 and len(assignments[c]) == 0]
-    rnd.shuffle(no_assignment)
-    for c in no_assignment:
-        if general_pool:
-            assignments[c].append(pop_random(general_pool, rnd))
-
-    # E. 4~11명이고 1개 받은 생활반은 일반 구역 1개 추가
-    candidates_f = [c for c in working_order if capacities[c] >= 4 and len(assignments[c]) == 1]
-    rnd.shuffle(candidates_f)
-    for c in candidates_f:
+    for c in second_general_targets:
         if general_pool:
             assignments[c].append(pop_random(general_pool, rnd))
         else:
             break
 
-    # F. 4~7명은 여기서 끝
-    # 아무것도 하지 않음
+    third_general_targets = build_priority_order(
+        [c for c in class_names if capacities[c] >= 7 and len(assignments[c]) == 2],
+        capacities,
+        rnd
+    )
 
-    # G. 8~11명이고 2개 받은 생활반은 일반 구역 1개 추가
-    candidates_h = [c for c in working_order if capacities[c] >= 8 and len(assignments[c]) == 2]
-    rnd.shuffle(candidates_h)
-    for c in candidates_h:
+    for c in third_general_targets:
         if general_pool:
             assignments[c].append(pop_random(general_pool, rnd))
         else:
             break
 
-    # 남은 청소구역은 따로 반환만 하고, 여기서 더 이상 자동 배정하지 않는다
-    leftover_areas = general_pool.copy()
+    # 남은 구역은 마지막 줄에 따로 표시
+    leftover_areas = leftover_core + general_pool
 
     # 이번 주 초고난도 담당 생활반 기록
     week_superhard = set()
@@ -159,7 +209,7 @@ def distribute_one_week(capacities, exempt_superhard_set, rnd):
         if any(a in super_hard_areas for a in assignments[c]):
             week_superhard.add(c)
 
-    return assignments, week_superhard, leftover_areas
+    return assignments, week_superhard, leftover_areas, severe_shortage, all_zero_case
 
 
 def distribute_5_weeks(capacities, initial_exempt_set=None, seed=None):
@@ -167,15 +217,17 @@ def distribute_5_weeks(capacities, initial_exempt_set=None, seed=None):
     rnd_master = random.Random(seed)
     weeks = []
     leftovers = []
+    warnings = []
 
-    # 1주차 초고난도 면제 대상
     prev_superhard = set(initial_exempt_set or set())
 
-    for _ in range(5):
+    all_zero_case = all(v == 0 for v in capacities.values())
+
+    for week_idx in range(1, 6):
         week_seed = rnd_master.randint(0, 2**31 - 1)
         rnd = random.Random(week_seed)
 
-        assgn, week_superhard, leftover_areas = distribute_one_week(
+        assgn, week_superhard, leftover_areas, severe_shortage, _ = distribute_one_week(
             capacities,
             prev_superhard,
             rnd
@@ -185,6 +237,11 @@ def distribute_5_weeks(capacities, initial_exempt_set=None, seed=None):
         leftovers.append(leftover_areas)
         prev_superhard = week_superhard.copy()
 
+        if severe_shortage and not all_zero_case:
+            warnings.append(
+                f"{week_idx}주차: 청소 인원 매우 부족으로, 화장실/목욕탕을 2주 연속 배정받는 생활반이 등장할 수 있습니다."
+            )
+
     # 표 만들기
     rows = []
     for c in class_names:
@@ -193,14 +250,14 @@ def distribute_5_weeks(capacities, initial_exempt_set=None, seed=None):
             row[f"{i}주차"] = ", ".join(assgn[c]) if assgn[c] else ""
         rows.append(row)
 
-    # 마지막 줄: 남은 청소구역
-    leftover_row = {"생활반": "인원 부족으로 아직 배정되지 않은 청소구역", "청소가능인원": ""}
+    # 마지막 줄: 아직 배정되지 못한 구역
+    leftover_row = {"생활반": "인원 부족으로 배정되지 못한 청소구역", "청소가능인원": ""}
     for i, lst in enumerate(leftovers, start=1):
         leftover_row[f"{i}주차"] = ", ".join(lst) if lst else ""
     rows.append(leftover_row)
 
     df = pd.DataFrame(rows)
-    return weeks, leftovers, df
+    return weeks, leftovers, df, warnings, all_zero_case
 
 
 # -------------------------
@@ -211,9 +268,11 @@ st.markdown(
     """
 생활반 청소 가능 인원에 따라 배정되는 청소구역 수가 달라집니다.
 
-1~3명: 일반 구역 1개  
-4~7명: 핵심 구역 1개 + 일반 구역 1개  
-8~11명: 핵심 구역 1개 + 일반 구역 2개  
+1~3명: 기본적으로 1개  
+4~6명: 기본적으로 2개  
+7~11명: 기본적으로 3개  
+
+핵심 구역이 부족하거나 생활반 수가 아주 적으면, 일부 구역은 마지막 줄에 따로 표시됩니다.
 """
 )
 
@@ -251,18 +310,25 @@ seed_val = int(seed_input) if seed_input.strip().isdigit() else None
 
 if st.button("▶ 결과 생성"):
     capacities = {c: int(cap_inputs[c]) for c in class_names}
-    weeks_assignments, leftovers, df = distribute_5_weeks(
+    weeks_assignments, leftovers, df, warnings, all_zero_case = distribute_5_weeks(
         capacities,
         initial_exempt_set=set(initial_exempt),
         seed=seed_val
     )
 
     st.success("배정 완료. 결과를 확인하세요.")
+
+    if all_zero_case:
+        st.info("청소 인원이 부족하여 짬타이거가 청소합니다. 🐱")
+
+    for msg in warnings:
+        st.warning(msg)
+
     st.header("배정 결과")
     st.dataframe(df, use_container_width=True, height=650)
 
     if any(leftovers):
-        st.warning("아래 행에 남은 청소구역이 표시되어 있습니다. 필요하면 수동으로 추가 분배하세요.")
+        st.warning("아래 행에 아직 배정되지 못한 청소구역이 표시되어 있습니다.")
 
     if st.checkbox("원시 배정 데이터 보기 (디버그)"):
         st.write(weeks_assignments)
