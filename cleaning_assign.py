@@ -142,18 +142,39 @@ def distribute_one_week(capacities, exempt_superhard_set, rnd):
                 break
 
         # 3) 핵심 구역이 남았다면 1~3명 생활반에 인원 많은 순으로 배정
-        remaining_core = super_pool + hard_pool
-        one_to_three = build_priority_order(
-            [c for c in class_names if 1 <= capacities[c] <= 3 and len(assignments[c]) == 0],
-            capacities,
-            rnd
-        )
+       # 핵심을 super / hard로 분리
+remaining_super = super_pool[:]
+remaining_hard = hard_pool[:]
 
-        for c in one_to_three:
-            if remaining_core:
-                assignments[c].append(pop_random(remaining_core, rnd))
-            else:
-                break
+one_to_three = build_priority_order(
+    [c for c in class_names if 1 <= capacities[c] <= 3 and len(assignments[c]) == 0],
+    capacities,
+    rnd
+)
+
+# 1) 초고난도: 면제 대상 제외하고 먼저 배정
+non_exempt = [c for c in one_to_three if c not in exempt_superhard_set]
+exempt = [c for c in one_to_three if c in exempt_superhard_set]
+
+for c in non_exempt:
+    if remaining_super:
+        assignments[c].append(pop_random(remaining_super, rnd))
+    else:
+        break
+
+# 2) 초고난도 남으면 면제 대상에도 배정 (불가피한 경우)
+for c in exempt:
+    if remaining_super:
+        assignments[c].append(pop_random(remaining_super, rnd))
+    else:
+        break
+
+# 3) 나머지는 고난도 배정
+remaining_core = remaining_hard
+
+for c in one_to_three:
+    if len(assignments[c]) == 0 and remaining_core:
+        assignments[c].append(pop_random(remaining_core, rnd))
 
         leftover_core = remaining_core[:]
 
