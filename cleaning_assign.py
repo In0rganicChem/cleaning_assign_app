@@ -258,26 +258,26 @@ if st.button("▶ 결과 생성"):
         """
        html = df.to_html(escape=False, index=False)
 
-for area in super_hard_areas:
-    html = html.replace(area, f"<b>{area}</b>")
-
-# table에 직접 스타일 박기
-html = html.replace(
-    "<table",
-    '<table style="display:block; overflow-x:auto; white-space:nowrap; width:100%;"'
-)
-
-html = html.replace(
-    "<th>",
-    '<th style="text-align:center; padding:6px; font-size:12px;">'
-)
-
-html = html.replace(
-    "<td>",
-    '<td style="text-align:center; padding:6px; font-size:12px;">'
-)
-
-st.markdown(html, unsafe_allow_html=True)
+    for area in super_hard_areas:
+        html = html.replace(area, f"<b>{area}</b>")
+    
+    # table에 직접 스타일 박기
+    html = html.replace(
+        "<table",
+        '<table style="display:block; overflow-x:auto; white-space:nowrap; width:100%;"'
+    )
+    
+    html = html.replace(
+        "<th>",
+        '<th style="text-align:center; padding:6px; font-size:12px;">'
+    )
+    
+    html = html.replace(
+        "<td>",
+        '<td style="text-align:center; padding:6px; font-size:12px;">'
+    )
+    
+    st.markdown(html, unsafe_allow_html=True)
 
 st.markdown("---")
 st.markdown("Python 코드로 만든 Streamlit 앱입니다.")
