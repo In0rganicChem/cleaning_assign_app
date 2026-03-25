@@ -256,28 +256,34 @@ if st.button("▶ 결과 생성"):
 
     st.markdown(
         """
-       html = df.to_html(escape=False, index=False)
+        <style>
+        .result-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .result-wrap table {
+            min-width: 100%;
+            border-collapse: collapse;
+        }
+        .result-wrap th,
+        .result-wrap td {
+            white-space: nowrap;
+            text-align: center;
+            padding: 6px 8px;
+            font-size: 12px;
+        }
+        @media (max-width: 768px) {
+            .result-wrap th,
+            .result-wrap td {
+                font-size: 11px;
+            }
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
 
-    for area in super_hard_areas:
-        html = html.replace(area, f"<b>{area}</b>")
-    
-    # table에 직접 스타일 박기
-    html = html.replace(
-        "<table",
-        '<table style="display:block; overflow-x:auto; white-space:nowrap; width:100%;"'
-    )
-    
-    html = html.replace(
-        "<th>",
-        '<th style="text-align:center; padding:6px; font-size:12px;">'
-    )
-    
-    html = html.replace(
-        "<td>",
-        '<td style="text-align:center; padding:6px; font-size:12px;">'
-    )
-    
-    st.markdown(html, unsafe_allow_html=True)
+    st.markdown(f'<div class="result-wrap">{html}</div>', unsafe_allow_html=True)
 
 st.markdown("---")
 st.markdown("Python 코드로 만든 Streamlit 앱입니다.")
