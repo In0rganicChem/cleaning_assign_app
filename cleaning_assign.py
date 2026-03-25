@@ -262,7 +262,6 @@ if st.button("▶ 결과 생성"):
             -webkit-overflow-scrolling: touch;
         }
         .result-wrap table {
-            width: max-content;
             min-width: 100%;
             border-collapse: collapse;
         }
