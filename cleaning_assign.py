@@ -197,13 +197,17 @@ def distribute_one_week(capacities, prev_week_a_set, rnd):
             assignments[c].append(area)
 
     # -------------------------
-    # 8. 인원이 7~11명인 생활반 중, 아직 2개만 배정받은 곳에 D 배정
+    # 8. 남은 D를 인원 많은 생활반부터 n개 선정하여 분배
     # -------------------------
-    step8_targets = [c for c in d_groups if len(assignments[c]) == 2]
-    for c in shuffled(step8_targets, rnd):
-        area = draw_one_from_group(pools, "D", rnd)
-        if area is not None:
-            assignments[c].append(area)
+    remaining_d = len(pools["D"])
+
+    if remaining_d > 0:
+        targets = most_populous_targets(capacities, remaining_d, rnd)
+
+        for c in targets:
+            area = draw_one_from_group(pools, "D", rnd)
+            if area is not None:
+                assignments[c].append(area)
 
     # 남은 구역
     leftover = pools["A"] + pools["B"] + pools["C"] + pools["D"]
@@ -375,10 +379,10 @@ with st.expander("📄 상세 작동 알고리즘 보기"):
 
 청소구역은 모두 25개인데, 이들을 4개의 그룹으로 구분한다.
 
-A: 1층 화장실, 2층 화장실, 3층 화장실, 1층 목욕탕 (4개)
-B: 2층 샤워장, 3층 샤워장 (2개)
-C: 1층 세면장, 2층 세면장, 3층 세면장, 2층 휴게실, 3층 휴게실 (5개)
-D: 1층 복도, 2층 복도, 3층 복도, 1층 세탁실, 2층 세탁실, 3층 세탁실, 공용 세탁방, 군척장, 체단실, 당구장, 사지방, 노래방, 동편 계단, 중앙 계단 (14개)
+A: 1층 화장실, 2층 화장실, 3층 화장실, 1층 목욕탕 (4개)  
+B: 2층 샤워장, 3층 샤워장 (2개)  
+C: 1층 세면장, 2층 세면장, 3층 세면장, 2층 휴게실, 3층 휴게실 (5개)  
+D: 1층 복도, 2층 복도, 3층 복도, 1층 세탁실, 2층 세탁실, 3층 세탁실, 공용 세탁방, 군척장, 체단실, 당구장, 사지방, 노래방, 동편 계단, 중앙 계단 (14개)  
 
 생활반은 모두 11개이며, 각각의 이름은 다음과 같다.
 2생활반, 3생활반, 5생활반, 6생활반, 7생활반, 8생활반, 10생활반, 11생활반, 12생활반, 13생활반, 14생활반
