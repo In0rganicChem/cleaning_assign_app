@@ -320,7 +320,7 @@ if st.button("▶ 결과 생성"):
     if all_zero_case:
         st.markdown("## 🐱")
         st.markdown("청소 인원이 부족하여 짬타이거가 청소합니다.")
-        st.image("https://cataas.com/cat", caption="짬타이거 출동", use_container_width=True)
+        st.image("https://cataas.com/cat", use_container_width=True)
     if warning_flag:
         st.warning("청소가능인원이 매우 부족하여 2주 연속 화장실/목욕탕을 청소하는 생활반이 나올 수 있습니다.")
 
