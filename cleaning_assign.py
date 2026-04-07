@@ -34,140 +34,215 @@ class_names = [
     "10생활반", "11생활반", "12생활반", "13생활반", "14생활반"
 ]
 
-# 청소구역
-super_hard_areas = ["1층 화장실", "2층 화장실", "3층 화장실", "1층 목욕탕"]
-hard_areas = ["2층 샤워장", "3층 샤워장", "1층 세면장", "2층 세면장", "3층 세면장"]
-general_areas_base = [
-    "1층 세탁실", "1층 복도", "2층 복도", "3층 복도", "동편 계단", "중앙 계단",
-    "2층 휴게실", "3층 휴게실", "체단실", "군척장", "공용세탁방", "당구장",
-    "사지방", "노래방", "2층 세탁실", "3층 세탁실"
-]
+# 청소구역 그룹
+AREA_GROUPS = {
+    "A": ["1층 화장실", "2층 화장실", "3층 화장실", "1층 목욕탕"],
+    "B": ["2층 샤워장", "3층 샤워장"],
+    "C": ["1층 세면장", "2층 세면장", "3층 세면장", "2층 휴게실", "3층 휴게실"],
+    "D": [
+        "1층 복도", "2층 복도", "3층 복도",
+        "1층 세탁실", "2층 세탁실", "3층 세탁실",
+        "공용 세탁방", "군척장", "체단실", "당구장",
+        "사지방", "노래방", "동편 계단", "중앙 계단"
+    ],
+}
 
 
-def pop_random(pool, rnd):
-    if not pool:
-        return None
-    return pool.pop(rnd.randrange(len(pool)))
+def make_pools():
+    """그룹별 청소구역 풀을 새로 만든다."""
+    return {k: v[:] for k, v in AREA_GROUPS.items()}
 
 
 def shuffled(items, rnd):
+    """리스트를 복사해서 무작위 순서로 섞는다."""
     items = items[:]
     rnd.shuffle(items)
     return items
 
 
-def assign_next_from_pool(targets, pool, assignments, rnd):
-    for c in targets:
-        if not pool:
-            break
-        assignments[c].append(pop_random(pool, rnd))
+def draw_from_allowed_groups(pools, allowed_groups, rnd):
+    """
+    허용된 그룹들 중 남아 있는 구역 하나를 무작위로 뽑는다.
+    뽑힌 구역은 해당 풀에서 제거한다.
+    """
+    candidates = []
+    for group in allowed_groups:
+        for area in pools[group]:
+            candidates.append((group, area))
+
+    if not candidates:
+        return None
+
+    group, area = candidates[rnd.randrange(len(candidates))]
+    pools[group].remove(area)
+    return area
 
 
-def distribute_one_week(capacities, exempt_superhard_set, rnd):
+def draw_one_from_group(pools, group_name, rnd):
+    """특정 그룹에서 구역 하나를 무작위로 뽑는다."""
+    return draw_from_allowed_groups(pools, [group_name], rnd)
+
+
+def most_populous_targets(capacities, count, rnd):
+    """
+    인원이 많은 생활반부터 고른다.
+    인원이 같으면 랜덤으로 섞는다.
+    """
+    eligible = [c for c in class_names if capacities[c] > 0]
+    grouped = {}
+    for c in eligible:
+        grouped.setdefault(capacities[c], []).append(c)
+
+    ordered = []
+    for cap in sorted(grouped.keys(), reverse=True):
+        chunk = shuffled(grouped[cap], rnd)
+        ordered.extend(chunk)
+
+    return ordered[:min(count, len(ordered))]
+
+
+def distribute_one_week(capacities, prev_week_a_set, rnd):
+    """
+    한 주 배정.
+
+    capacities: {생활반명: 청소가능인원}
+    prev_week_a_set: 지난 주에 그룹 A를 배정받은 생활반
+    rnd: random.Random 객체
+    """
     assignments = {c: [] for c in class_names}
-
-    super_pool = super_hard_areas.copy()
-    hard_pool = hard_areas.copy()
-    general_pool = general_areas_base.copy()
+    pools = make_pools()
 
     nonzero = [c for c in class_names if capacities[c] > 0]
 
+    # 0명만 있는 경우
     if not nonzero:
-        leftover = super_pool + hard_pool + general_pool
+        leftover = pools["A"] + pools["B"] + pools["C"] + pools["D"]
         return assignments, set(), leftover, False, True
 
+    # 인원 구간
     b_groups = [c for c in class_names if 1 <= capacities[c] <= 3]
     c_groups = [c for c in class_names if 4 <= capacities[c] <= 6]
     d_groups = [c for c in class_names if 7 <= capacities[c] <= 11]
-    core_4_11 = c_groups + d_groups
 
-    severe_shortage = len(nonzero) <= 8
+    # 1-3명 생활반이 7개 이상이면, A 2주 연속 방지 규칙을 무시한다
+    ignore_a_repeat = len(b_groups) >= 7
+    warning_flag = ignore_a_repeat
 
-    if severe_shortage:
-        core_recipients = shuffled(nonzero, rnd)
-
-        assign_next_from_pool(core_recipients, super_pool, assignments, rnd)
-        assign_next_from_pool(
-            [c for c in core_recipients if len(assignments[c]) == 0],
-            hard_pool,
-            assignments,
-            rnd
-        )
-
-        leftover_core = super_pool + hard_pool
-
-    else:
-        if len(core_4_11) >= 9:
-            core_recipients = rnd.sample(core_4_11, 9)
+    # -------------------------
+    # 2. 1~3명 생활반에 25개 중 1개씩 랜덤 배정
+    # -------------------------
+    for c in shuffled(b_groups, rnd):
+        if ignore_a_repeat or c not in prev_week_a_set:
+            allowed = ["A", "B", "C", "D"]
         else:
-            need = 9 - len(core_4_11)
-            core_recipients = core_4_11[:] + rnd.sample(b_groups, need)
+            # 지난 주 A를 받은 생활반은 A를 못 받게 한다
+            allowed = ["B", "C", "D"]
 
-        non_exempt = [c for c in core_recipients if c not in exempt_superhard_set]
-        exempt = [c for c in core_recipients if c in exempt_superhard_set]
+        area = draw_from_allowed_groups(pools, allowed, rnd)
+        if area is not None:
+            assignments[c].append(area)
 
-        assign_next_from_pool(shuffled(non_exempt, rnd), super_pool, assignments, rnd)
-        assign_next_from_pool(shuffled(exempt, rnd), super_pool, assignments, rnd)
+    # -------------------------
+    # 3. 그룹 A를 아직 배정받지 못한 4~11명 생활반에 배정
+    #    (A 반복 금지는 여기서도 동일하게 적용)
+    # -------------------------
+    step3_targets = [c for c in c_groups + d_groups if len(assignments[c]) == 0]
 
-        remaining_core_targets = [c for c in core_recipients if len(assignments[c]) == 0]
-        assign_next_from_pool(shuffled(remaining_core_targets, rnd), hard_pool, assignments, rnd)
+    if not ignore_a_repeat:
+        step3_targets = [c for c in step3_targets if c not in prev_week_a_set]
 
-        leftover_core = super_pool + hard_pool
+    for c in shuffled(step3_targets, rnd):
+        area = draw_one_from_group(pools, "A", rnd)
+        if area is not None:
+            assignments[c].append(area)
 
-    first_general_targets = [
+    # A가 남았다면 여기서 leftover로 남는다
+    # -------------------------
+    # 4. 그룹 B를 아직 배정받지 못한 4~11명 생활반에 배정
+    # -------------------------
+    step4_targets = [c for c in c_groups + d_groups if len(assignments[c]) == 0]
+    for c in shuffled(step4_targets, rnd):
+        area = draw_one_from_group(pools, "B", rnd)
+        if area is not None:
+            assignments[c].append(area)
+
+    # -------------------------
+    # 5. 그룹 C를 아직 배정받지 못한 4~11명 생활반에 배정
+    # -------------------------
+    step5_targets = [c for c in c_groups + d_groups if len(assignments[c]) == 0]
+    for c in shuffled(step5_targets, rnd):
+        area = draw_one_from_group(pools, "C", rnd)
+        if area is not None:
+            assignments[c].append(area)
+
+    # -------------------------
+    # 6. 남은 그룹 C를 인원이 많은 생활반부터 배정
+    # -------------------------
+    remaining_c = len(pools["C"])
+    if remaining_c > 0:
+        targets = most_populous_targets(capacities, remaining_c, rnd)
+        for c in targets:
+            area = draw_one_from_group(pools, "C", rnd)
+            if area is not None:
+                assignments[c].append(area)
+
+    # -------------------------
+    # 7. 인원이 4~11명인 생활반 중, 아직 1개만 배정받은 곳에 D 배정
+    # -------------------------
+    step7_targets = [c for c in c_groups + d_groups if len(assignments[c]) == 1]
+    for c in shuffled(step7_targets, rnd):
+        area = draw_one_from_group(pools, "D", rnd)
+        if area is not None:
+            assignments[c].append(area)
+
+    # -------------------------
+    # 8. 인원이 7~11명인 생활반 중, 아직 2개만 배정받은 곳에 D 배정
+    # -------------------------
+    step8_targets = [c for c in d_groups if len(assignments[c]) == 2]
+    for c in shuffled(step8_targets, rnd):
+        area = draw_one_from_group(pools, "D", rnd)
+        if area is not None:
+            assignments[c].append(area)
+
+    # 남은 구역
+    leftover = pools["A"] + pools["B"] + pools["C"] + pools["D"]
+
+    # 이번 주 그룹 A 담당 생활반
+    week_a = {
         c for c in class_names
-        if capacities[c] > 0 and len(assignments[c]) == 0
-    ]
-    assign_next_from_pool(shuffled(first_general_targets, rnd), general_pool, assignments, rnd)
-
-    second_general_targets = [
-        c for c in class_names
-        if 4 <= capacities[c] <= 11 and len(assignments[c]) == 1
-    ]
-    assign_next_from_pool(shuffled(second_general_targets, rnd), general_pool, assignments, rnd)
-
-    third_general_targets = [
-        c for c in class_names
-        if 7 <= capacities[c] <= 11 and len(assignments[c]) == 2
-    ]
-    assign_next_from_pool(shuffled(third_general_targets, rnd), general_pool, assignments, rnd)
-
-    leftover = leftover_core + general_pool
-
-    week_superhard = {
-        c for c in class_names
-        if any(a in super_hard_areas for a in assignments[c])
+        if any(a in AREA_GROUPS["A"] for a in assignments[c])
     }
 
-    return assignments, week_superhard, leftover, severe_shortage, False
+    return assignments, week_a, leftover, warning_flag, False
 
 
-def distribute_5_weeks(capacities, first_week_exempt_set=None, seed=None):
+def distribute_5_weeks(capacities, first_week_a_set=None, seed=None):
+    """5주 배정"""
     rnd_master = random.Random(seed)
     weeks = []
     leftovers = []
-
     warning_flag = False
 
-    prev_superhard = set(first_week_exempt_set or set())
+    prev_a_set = set(first_week_a_set or set())
     all_zero_case = all(v == 0 for v in capacities.values())
 
     for _ in range(5):
         rnd = random.Random(rnd_master.randint(0, 2**31 - 1))
 
-        assgn, week_superhard, leftover, severe_shortage, _ = distribute_one_week(
+        assgn, week_a, leftover, week_warning, _ = distribute_one_week(
             capacities,
-            prev_superhard,
+            prev_a_set,
             rnd
         )
 
         weeks.append(assgn)
         leftovers.append(leftover)
-        prev_superhard = week_superhard
+        prev_a_set = week_a
 
-        if severe_shortage and not all_zero_case:
+        if week_warning and not all_zero_case:
             warning_flag = True
 
+    # 결과 표
     rows = []
     for c in class_names:
         row = {"생활반": c, "청소가능인원": capacities[c]}
@@ -193,19 +268,17 @@ st.header("생활반 별 청소가능인원을 입력하십시오 (0~11)")
 with st.expander("청소구역 배정 규칙 보기"):
     try:
         st.markdown(
-             """
+            """
 생활반 청소 가능 인원에 따라 배정되는 청소구역 수가 달라집니다.
- 
-1-3명: 쉬운 구역 1개  
-4-6명: 구역 2개(화장실/샤워장/세면장 1개 포함)  
-7-11명: 구역 3개(화장실/샤워장/세면장 1개 포함)  
-화장실 및 목욕탕은 2주 연속 청소하지 않습니다.
+
+1~3명: 25개 중 1개를 랜덤 배정  
+4~6명: 그룹 A → 그룹 B → 그룹 C → 그룹 D 순으로 배정  
+7~11명: 그룹 A → 그룹 B → 그룹 C → 그룹 D 순으로 배정  
+지난 주 그룹 A를 받은 생활반은, 가능한 경우 이번 주 그룹 A를 다시 받지 않습니다.
 """
-)
+        )
     except Exception as e:
         st.error(str(e))
-
-
 
 cap_inputs = {}
 for i in range(0, len(class_names), 3):
@@ -222,20 +295,23 @@ for i in range(0, len(class_names), 3):
         )
 
 st.markdown("---")
-first_week_exempt = st.multiselect(
-    "지난 주에 화장실/목욕탕을 배정받은 생활반을 선택하세요. 선택된 생활반들은 첫 주에 화장실 및 목욕탕을 배정받지 않습니다.",
+first_week_a = st.multiselect(
+    "지난 주에 화장실/목욕탕을 배정받은 생활반을 선택하세요.",
     class_names,
     default=[]
 )
 
-seed_input = st.text_input("난수 시드를 정수로 입력하세요. 같은 난수 시드는 같은 결과를 보장합니다. 입력하지 않으면 랜덤으로 처리됩니다.", value="")
+seed_input = st.text_input(
+    "난수 시드를 정수로 입력하세요. 같은 난수 시드는 같은 결과를 보장합니다. 입력하지 않으면 랜덤으로 처리됩니다.",
+    value=""
+)
 seed_val = int(seed_input) if seed_input.isdigit() else None
 
 if st.button("▶ 결과 생성"):
     capacities = {c: int(cap_inputs[c]) for c in class_names}
     df, warning_flag, all_zero_case = distribute_5_weeks(
         capacities,
-        first_week_exempt_set=set(first_week_exempt),
+        first_week_a_set=set(first_week_a),
         seed=seed_val
     )
 
@@ -246,13 +322,14 @@ if st.button("▶ 결과 생성"):
         st.markdown("청소 인원이 부족하여 짬타이거가 청소합니다.")
 
     if warning_flag:
-        st.warning("청소 인원이 매우 부족하여 2주 연속 화장실/목욕탕을 청소하는 생활반이 나올 수 있습니다.")
+        st.warning("청소가능인원이 매우 부족하여 2주 연속 화장실/목욕탕을 청소하는 생활반이 나올 수 있습니다.")
 
     st.header("배정 결과")
 
     html = df.to_html(escape=False, index=False)
-    for area in super_hard_areas:
+    for area in AREA_GROUPS["A"]:
         html = html.replace(area, f"<b>{area}</b>")
+    html = html.replace("<th>", '<th style="text-align:center;">')
 
     st.markdown(
         """
@@ -288,27 +365,6 @@ if st.button("▶ 결과 생성"):
 st.markdown("---")
 st.markdown("Python 코드로 만든 Streamlit 앱입니다.")
 
-with st.expander("📄 상세 작동 알고리즘 보기"):
-    try:
-        st.markdown(
-             """
-1. 인원이 0명인 생활반은 청소 면제.  
-2. 핵심 청소구역 9개 (화장실, 샤워장, 목욕탕, 세면장) 을 청소할 생활반 9개 선정.  
-2-1. 선정 시, 인원이 4명 이상인 생활반을 우선으로 선정.  
-2-2. 인원이 4명 이상인 생활반이 8개 이하라면, 인원이 4명 미만(and 1명 이상)인 생활반에서도 차출.  
-3. 생활반 9개에 핵심 청소구역 9개 배정. 이때 지난 주에 화장실 및 목욕탕을 배정받은 생활반에는 화장실 및 목욕탕을 배정하지 않음.  
-3-1. 만약 인원이 있는 생활반이 8개 이하(n개라고 하자)라면, 9-n개의 핵심 청소구역은 "인원 부족으로 배정되지 못한 청소구역" 처리됨.  
-이때는 화장실 및 목욕탕 면제 없음. "청소 인원이 매우 부족하여 2주 연속 화장실/목욕탕을 청소하는 생활반이 나올 수 있습니다." 경고 전시.  
-이 경우에는 대표수병이 수동으로 청소구역을 많이 수정해야 할 것으로 보임.
-4. 2단계에서 9개의 생활반으로 선정되지 않아 아직 아무 구역도 배정받지 못한 생활반에 일반 청소구역(핵심 청소구역 9개 빼고 전부) 하나 배정.  
-5. 인원이 4명 이상인 생활반에 일반 청소구역 하나씩 더 배정.  
-6. 인원이 7명 이상인 생활반에 일반 청소구역 하나씩 더 배정. 배정될 청소구역이 부족하다면 랜덤으로 뽑힌 생활반에 배정.  
-7. 5, 6단계 이후에 아직 배정되지 않은 청소구역이 있다면  "인원 부족으로 배정되지 못한 청소구역" 처리.
-"""
-)
-    except Exception as e:
-        st.error(str(e))
-        
 with st.expander("📄 현재 실행 중인 코드 보기"):
     try:
         with open(__file__, "r", encoding="utf-8") as f:
