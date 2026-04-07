@@ -123,9 +123,10 @@ def distribute_one_week(capacities, prev_week_a_set, rnd):
     b_groups = [c for c in class_names if 1 <= capacities[c] <= 3]
     c_groups = [c for c in class_names if 4 <= capacities[c] <= 6]
     d_groups = [c for c in class_names if 7 <= capacities[c] <= 11]
+    zero_to_three_groups = [c for c in class_names if 0 <= capacities[c] <= 3]
 
-    # 1-3명 생활반이 7개 이상이면, A 2주 연속 방지 규칙을 무시한다
-    ignore_a_repeat = len(b_groups) >= 7
+    # 0-3명 생활반이 7개 이상이면, A 2주 연속 방지 규칙을 무시한다
+    ignore_a_repeat = len(zero_to_three_groups) >= 7
     warning_flag = ignore_a_repeat
 
     # -------------------------
