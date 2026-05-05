@@ -5,6 +5,7 @@
 import streamlit as st
 import pandas as pd
 import random
+import hashlib  # 작은 변화에도 완전히 다른 시드를 만들기 위해 추가됨
 
 st.set_page_config(page_title="청소구역 배정 프로그램", layout="wide")
 
@@ -223,7 +224,17 @@ def distribute_one_week(capacities, prev_week_a_set, rnd):
 
 def distribute_5_weeks(capacities, first_week_a_set=None, seed=None):
     """5주 배정"""
-    rnd_master = random.Random(seed)
+    
+    # 입력값의 미세한 차이가 결과를 완전히 뒤바꾸도록(chaotic) 해싱 처리
+    if seed is not None:
+        # seed, capacities, first_week_a_set의 상태를 하나의 문자열로 결합
+        state_str = f"{seed}_{sorted(capacities.items())}_{sorted(list(first_week_a_set or []))}"
+        # SHA-256을 통해 입력값이 하나라도 다르면 완전히 다른 거대한 정수를 생성
+        chaotic_seed = int(hashlib.sha256(state_str.encode('utf-8')).hexdigest(), 16)
+        rnd_master = random.Random(chaotic_seed)
+    else:
+        rnd_master = random.Random(None)
+
     weeks = []
     leftovers = []
     warning_flag = False
